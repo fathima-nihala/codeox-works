@@ -3,7 +3,7 @@ const user = require('../Model/user');
 const Crypto = require('crypto-js');
 const bcrypt = require('bcrypt')
 const Jwt = require('jsonwebtoken')
-const sendEmail =  require('../utils/email')
+const sendEmail = require('../utils/email')
 const crypto = require('crypto');
 
 
@@ -20,9 +20,15 @@ router.post('/post', async (req, res) => {
         });
         console.log(req.body);
         const savedUser = await newUser.save();
-        res.status(200).json(savedUser);
+        res.status(200).json({
+            success: true,
+            savedUser
+        });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({
+            success:false,
+            error: error.message
+        });
     }
 });
 
@@ -114,7 +120,7 @@ router.post('/login', async (req, res) => {
         console.log('Original password is', originalPassword);
         originalPassword != req.body.password && res.status(401).json({ response: "password and email doesnt match" })
 
-       
+
         const accessToken = Jwt.sign({
             id: DBdata._id
         }, process.env.Jwt_sec,
@@ -122,15 +128,15 @@ router.post('/login', async (req, res) => {
 
         console.log("****", accessToken);
         const { password, ...others } = DBdata._doc
-        res.status(200).json({ success:true,  accessToken })
-       
+        res.status(200).json({ success: true, accessToken })
+
     } catch (err) {
         res.status(400).json({
-            err:err.message
+            err: err.message
         })
     }
 
-   
+
 })
 
 module.exports = router;
@@ -138,44 +144,44 @@ module.exports = router;
 
 
 //forget password
-router.post('/forgetpass',async(req,res)=>{
-    const User = await user.findOne({email:req.body.email})
+router.post('/forgetpass', async (req, res) => {
+    const User = await user.findOne({ email: req.body.email })
     if (!User) {
         return res.status(404).json({
-            success:false,
-            message:"user not found"
+            success: false,
+            message: "user not found"
         })
     }
 
     //generete token
     const resetToken = User.createRestPassword();
 
-    await User.save({validateBeforeSave:false}); 
+    await User.save({ validateBeforeSave: false });
 
     //send token back to user
     const resetUrl = `${req.protocol}://${req.get('host')}/user/reset/${resetToken}`;
     const message = `we have recieved a password reset request.please use the below link to reset your password\n\n${resetUrl}\n\n This reset password link is only valid for 10 mins`
-    
+
     try {
         await sendEmail({
-            email:User.email,
-            subject:'password change request recieved',
-            message:message
+            email: User.email,
+            subject: 'password change request recieved',
+            message: message
         })
 
         res.status(200).json({
-            success:true,
-            message:"reset link sended to your email "
+            success: true,
+            message: "reset link sended to your email "
         })
 
     } catch (error) {
-        User.resetPasswordToken=undefined;
-        User.resetPasswordTokenExpire=undefined;
-        User.save({validateBeforeSave:false});
+        User.resetPasswordToken = undefined;
+        User.resetPasswordTokenExpire = undefined;
+        User.save({ validateBeforeSave: false });
 
         return res.status(500).json('please try again later')
     }
-   
+
 })
 
 
@@ -204,7 +210,7 @@ router.patch('/resetpass/:token', async (req, res) => {
         await User.save();
 
         // 3. Generate access token and send it back to the client
-        const accessToken = Jwt.sign({ id: User._id }, process.env.Jwt_sec,   { expiresIn: '5d' });
+        const accessToken = Jwt.sign({ id: User._id }, process.env.Jwt_sec, { expiresIn: '5d' });
 
         res.status(200).json({
             success: true,

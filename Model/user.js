@@ -33,7 +33,7 @@ const userSchema = new mongoose.Schema({
     },
     confirmPassword: {
         type: String,
-        required: [true, 'Please confirm your password.']
+        required: [false, 'Please confirm your password.']
     },  
     passordChangedAt: Date,
     resetPasswordToken: String,
